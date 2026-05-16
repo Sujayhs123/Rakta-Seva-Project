@@ -15,6 +15,14 @@ local.properties
 .gradle/
 /captures/
 
+# Large archives and build artifacts
+*.zip
+*.7z
+*.pdf
+*.hprof
+RaktaSevaConnect-Submission-Final/
+RaktaSevaConnect-GitHub*
+
 # Misc
 .DS_Store
 *.log
