@@ -1,0 +1,81 @@
+rules_version = '2';
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+    function signedIn() {
+      return request.auth != null;
+    }
+
+    function isSelf(uid) {
+      return signedIn() && request.auth.uid == uid;
+    }
+
+    function isRequestOwner() {
+      return signedIn() && request.auth.uid == resource.data.requesterId;
+    }
+
+    function isValidBloodGroup(value) {
+      return value in ['A+', 'A-', 'B+', 'B-', 'AB+', 'AB-', 'O+', 'O-'];
+    }
+
+    match /users/{uid} {
+      allow create: if isSelf(uid)
+        && request.resource.data.uid == uid
+        && isValidBloodGroup(request.resource.data.bloodGroup);
+
+      allow get, update, delete: if isSelf(uid);
+
+      allow list: if false;
+    }
+
+    match /bloodRequests/{requestId} {
+      allow create: if signedIn()
+        && request.resource.data.requesterId == request.auth.uid
+        && request.resource.data.status == 'active'
+        && isValidBloodGroup(request.resource.data.bloodGroup);
+
+      allow get: if signedIn()
+        && (
+          request.auth.uid == resource.data.requesterId
+          || request.auth.uid in resource.data.acceptedDonors
+        );
+
+      allow list: if false;
+
+      allow update: if signedIn()
+        && request.auth.uid == resource.data.requesterId
+        && request.resource.data.diff(resource.data).changedKeys().hasOnly(['status', 'updatedAt'])
+        && request.resource.data.status in ['fulfilled', 'cancelled'];
+
+      allow delete: if false;
+
+      match /responses/{donorId} {
+        allow create, update: if isSelf(donorId)
+          && request.resource.data.donorId == request.auth.uid
+          && request.resource.data.status in ['accepted', 'declined'];
+
+        allow get, list: if signedIn()
+          && (
+            request.auth.uid == donorId
+            || request.auth.uid == get(/databases/$(database)/documents/bloodRequests/$(requestId)).data.requesterId
+          );
+      }
+    }
+
+    match /donations/{donationId} {
+      allow create: if signedIn()
+        && (
+          request.resource.data.donorId == request.auth.uid
+          || request.resource.data.requesterId == request.auth.uid
+        );
+
+      allow get, list: if signedIn()
+        && (
+          resource.data.donorId == request.auth.uid
+          || resource.data.requesterId == request.auth.uid
+        );
+
+      allow update, delete: if false;
+    }
+  }
+}
