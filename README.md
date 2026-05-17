@@ -1,87 +1,73 @@
-# Rakta-Seva Connect
+# Rakta-Seva Connect 🩸
 
-Rakta-Seva Connect is an Android emergency blood donation project built with Kotlin, Jetpack Compose, Material 3, and Firebase backend components. The app demonstrates donor registration, donor availability, emergency blood request creation, nearby donor matching, request status, and donor profile screens.
+Rakta-Seva Connect is an Android emergency blood donation application built with **Kotlin**, **Jetpack Compose**, **Material 3**, and **Firebase** backend services. The application demonstrates donor registration, donor availability management, emergency blood request creation, nearby donor matching, request tracking, and donor profile management.
 
-## Features
+Rakta-Seva Connect is a modern, real-time Android application designed to bridge the gap between blood donors and recipients. Built with **Jetpack Compose** and **Firebase**, it focuses on speed, security, and creating a positive local community impact.
 
-- Splash and onboarding flow
-- Login/register user interface
-- Home dashboard with donor availability
-- Emergency blood request form
-- Nearby donor list and map view
-- Incoming request and request status screens
-- Donor profile management
-- Firebase Cloud Functions for matching donors within 10 km
-- Firestore rules and indexes
-- 90-day donation cooldown backend logic
+##  Key Features
 
-## Tech Stack
+- **Emergency Broadcasts**  
+  Post blood requests that instantly reach matching donors within a **10 km radius**.
 
-- Android native app
-- Kotlin
-- Jetpack Compose
-- Material 3
-- MVVM-style structure
-- Firebase Auth, Firestore, Cloud Messaging
-- Firebase Cloud Functions with TypeScript
-- Google Maps and Location Services
+- **Privacy-First Design**  
+  Personal contact details are only shared after a donor explicitly accepts a request.
 
-## Project Structure
+- **Live Status Tracking**  
+  Real-time updates on how many donors have been notified, viewed, and accepted your request.
 
-```text
-.
-├── app/                         Android app module
-│   └── src/main/java/com/raktaseva/connect/
-├── functions/                   Firebase Cloud Functions
-│   └── src/index.ts
-├── firestore.rules              Firestore security rules
-├── firestore.indexes.json       Firestore indexes
-├── firebase.json                Firebase project config
-├── BACKEND.md                   Backend setup notes
-└── README.md
-```
+- **Interactive Map View**  
+  Visualize nearby donors and hospitals using **Google Maps integration**.
 
-## Android Setup
+- **Donor History**  
+  Track donations, lives saved, and cooling-down periods to ensure safe donation intervals.
 
-1. Open this folder in Android Studio.
-2. Let Gradle sync finish.
-3. Add your real Google Maps API key in a local `local.properties` file:
+- **Verified Profiles**  
+  Support for hospital-verified donation history.
 
-   ```properties
-   MAPS_API_KEY=your_google_maps_api_key
-   ```
+---
 
-4. If you want Firebase services connected in the Android app, create a Firebase Android app with package name `com.raktaseva.connect`, download `google-services.json`, and place it inside `app/`.
-5. Run the app with:
+##  Tech Stack
 
-   ```bash
-   ./gradlew assembleDebug
-   ```
+- **UI Framework:** Jetpack Compose (100% Kotlin)
+- **Architecture:** MVVM (Model-View-ViewModel)
+- **Backend:** Firebase (Firestore, Authentication, Cloud Messaging)
+- **Maps:** Google Maps SDK for Android (Maps Compose)
+- **Navigation:** Compose Navigation
+- **Graphics:** Custom Canvas-based logo rendering
 
-   On Windows:
+---
 
-   ```bash
-   gradlew.bat assembleDebug
-   ```
+##  Getting Started
 
-## Firebase Functions Setup
+### Prerequisites
+
+Before running the application, ensure you have:
+
+- Android Studio Ladybug or newer
+- JDK 17
+- Google Maps API Key
+- `google-services.json` file from your Firebase project
+
+### Installation
+
+1. Clone the repository:
 
 ```bash
-cd functions
-npm install
-npm run build
+git clone https://github.com/yourusername/Rakta-Seva-Connect.git
 ```
 
-To deploy after configuring Firebase CLI:
+2. Open the project in Android Studio.
 
-```bash
-npm run deploy
+3. Add your `google-services.json` file to the `app/` directory.
+
+4. Add your Google Maps API key in `local.properties`:
+
+```properties
+MAPS_API_KEY=YOUR_API_KEY_HERE
 ```
 
-## Submission Notes
+5. Sync Gradle and run the application.
 
-This repository intentionally excludes local machine files, generated build folders, APKs, memory dumps, and private configuration. Add real API keys only on your machine or in your Firebase/Google Cloud project settings.
+---
 
-## Status
-
-The Android app contains a complete Compose UI prototype with sample in-memory data. The backend folder contains Firebase Functions, Firestore rules, and indexes for the real donor-matching workflow.
+Built with ❤️ to connect donors and save lives.
