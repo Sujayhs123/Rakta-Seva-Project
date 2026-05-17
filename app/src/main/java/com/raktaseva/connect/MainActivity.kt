@@ -98,6 +98,7 @@ import com.raktaseva.connect.ui.theme.EmergencyOrange
 import com.raktaseva.connect.ui.theme.RaktaSevaTheme
 import com.raktaseva.connect.ui.theme.SuccessGreen
 import com.raktaseva.connect.viewmodel.RaktaSevaViewModel
+import androidx.compose.ui.tooling.preview.Preview
 import kotlinx.coroutines.delay
 
 class MainActivity : ComponentActivity() {
@@ -172,12 +173,11 @@ private fun SplashScreen(navController: NavHostController, viewModel: RaktaSevaV
 }
 
 @Composable
-private fun OnboardingScreen(navController: NavHostController) {
+internal fun OnboardingScreen(navController: NavHostController) {
     val pages = listOf(
         "Become a registered blood donor in 60 seconds.",
         "Post emergency blood requests instantly.",
-        "Get matched with donors within 10 km.",
-        "Your contact details stay private until you accept."
+        "Get matched with donors within 10 km. Your details stay private until you accept."
     )
     var page by rememberSaveable { mutableIntStateOf(0) }
 
@@ -228,7 +228,7 @@ private fun OnboardingScreen(navController: NavHostController) {
 private fun LoginRegisterScreen(navController: NavHostController, viewModel: RaktaSevaViewModel) {
     var tab by rememberSaveable { mutableIntStateOf(0) }
     var phone by rememberSaveable { mutableStateOf("") }
-    var otp by rememberSaveable { mutableStateOf("") }
+    var password by rememberSaveable { mutableStateOf("") }
     var name by rememberSaveable { mutableStateOf("") }
     var email by rememberSaveable { mutableStateOf("") }
     var bloodGroup by rememberSaveable { mutableStateOf("B+") }
@@ -261,16 +261,16 @@ private fun LoginRegisterScreen(navController: NavHostController, viewModel: Rak
                     keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Phone),
                     singleLine = true
                 )
-                if (tab == 0) {
-                    OutlinedTextField(
-                        value = otp,
-                        onValueChange = { otp = it.take(6) },
-                        modifier = Modifier.fillMaxWidth(),
-                        label = { Text("OTP") },
-                        keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
-                        singleLine = true
-                    )
-                } else {
+                OutlinedTextField(
+                    value = password,
+                    onValueChange = { password = it },
+                    modifier = Modifier.fillMaxWidth(),
+                    label = { Text("Password") },
+                    visualTransformation = androidx.compose.ui.text.input.PasswordVisualTransformation(),
+                    keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Password),
+                    singleLine = true
+                )
+                if (tab == 1) {
                     OutlinedTextField(name, { name = it }, Modifier.fillMaxWidth(), label = { Text("Full name") }, singleLine = true)
                     OutlinedTextField(email, { email = it }, Modifier.fillMaxWidth(), label = { Text("Email optional") }, singleLine = true)
                     BloodGroupSelector(bloodGroup) { bloodGroup = it }
@@ -281,12 +281,12 @@ private fun LoginRegisterScreen(navController: NavHostController, viewModel: Rak
                 Button(
                     modifier = Modifier.fillMaxWidth().height(54.dp),
                     onClick = {
-                        val isValid = phone.length >= 10 && (tab == 0 || name.isNotBlank() && dob.isNotBlank())
+                        val isValid = phone.length >= 10 && password.length >= 6 && (tab == 0 || name.isNotBlank() && dob.isNotBlank())
                         if (isValid) {
                             viewModel.login()
                             navController.navigate(Routes.Home) { popUpTo(Routes.Auth) { inclusive = true } }
                         } else {
-                            message = "Please complete the required fields."
+                            message = if (password.length < 6) "Password must be at least 6 characters." else "Please complete all fields."
                         }
                     }
                 ) {
@@ -601,7 +601,7 @@ private fun AppScaffold(
 }
 
 @Composable
-private fun GreetingCard(profile: UserProfile) {
+internal fun GreetingCard(profile: UserProfile) {
     CardItem {
         Text("Hello, ${profile.name}", fontSize = 24.sp, fontWeight = FontWeight.Bold)
         Spacer(Modifier.height(6.dp))
@@ -610,7 +610,7 @@ private fun GreetingCard(profile: UserProfile) {
 }
 
 @Composable
-private fun AvailabilityCard(isAvailable: Boolean, onToggle: () -> Unit) {
+internal fun AvailabilityCard(isAvailable: Boolean, onToggle: () -> Unit) {
     CardItem {
         Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.SpaceBetween) {
             Column(Modifier.weight(1f)) {
@@ -623,7 +623,7 @@ private fun AvailabilityCard(isAvailable: Boolean, onToggle: () -> Unit) {
 }
 
 @Composable
-private fun QuickAction(title: String, subtitle: String, icon: ImageVector, modifier: Modifier, color: Color, onClick: () -> Unit) {
+internal fun QuickAction(title: String, subtitle: String, icon: ImageVector, modifier: Modifier, color: Color, onClick: () -> Unit) {
     Card(
         onClick = onClick,
         modifier = modifier.height(118.dp),
@@ -640,11 +640,15 @@ private fun QuickAction(title: String, subtitle: String, icon: ImageVector, modi
 }
 
 @Composable
-private fun RequestSummaryCard(request: BloodRequest, onClick: () -> Unit = {}) {
+internal fun RequestSummaryCard(request: BloodRequest, onClick: () -> Unit = {}) {
+    val isCritical = request.urgency == Urgency.CRITICAL
     Card(
         onClick = onClick,
-        colors = CardDefaults.cardColors(containerColor = Color.White),
+        colors = CardDefaults.cardColors(
+            containerColor = if (isCritical) Color(0xFFFFEBEE) else Color.White
+        ),
         shape = RoundedCornerShape(8.dp),
+        border = if (isCritical) androidx.compose.foundation.BorderStroke(1.dp, BloodRed) else null,
         elevation = CardDefaults.cardElevation(2.dp),
         modifier = Modifier.fillMaxWidth()
     ) {
@@ -652,7 +656,34 @@ private fun RequestSummaryCard(request: BloodRequest, onClick: () -> Unit = {}) 
             BloodGroupBadge(request.bloodGroup, 64)
             Spacer(Modifier.width(14.dp))
             Column(Modifier.weight(1f)) {
-                Text("${request.bloodGroup} Blood Required", fontWeight = FontWeight.Bold, fontSize = 18.sp)
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.spacedBy(8.dp)
+                ) {
+                    Text(
+                        "${request.bloodGroup} Required",
+                        fontWeight = FontWeight.Bold,
+                        fontSize = 17.sp,
+                        modifier = Modifier.weight(1f, fill = false)
+                    )
+                    if (isCritical) {
+                        Surface(
+                            color = BloodRed,
+                            shape = RoundedCornerShape(4.dp)
+                        ) {
+                            Text(
+                                "HIGH PRIORITY",
+                                color = Color.White,
+                                fontSize = 9.sp,
+                                fontWeight = FontWeight.ExtraBold,
+                                modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp),
+                                maxLines = 1,
+                                softWrap = false
+                            )
+                        }
+                    }
+                }
                 Text("${request.unitsRequired} units - ${request.urgency.label}", color = BloodRed, fontWeight = FontWeight.SemiBold)
                 Text(request.hospitalName, color = Color.Gray)
             }
@@ -662,7 +693,7 @@ private fun RequestSummaryCard(request: BloodRequest, onClick: () -> Unit = {}) 
 }
 
 @Composable
-private fun DonorCard(donor: Donor, revealPhone: Boolean) {
+internal fun DonorCard(donor: Donor, revealPhone: Boolean) {
     CardItem {
         Row(verticalAlignment = Alignment.CenterVertically) {
             BloodGroupBadge(donor.bloodGroup, 52)
@@ -680,7 +711,7 @@ private fun DonorCard(donor: Donor, revealPhone: Boolean) {
 }
 
 @Composable
-private fun FilterCard(
+internal fun FilterCard(
     group: String,
     onGroupChange: (String) -> Unit,
     distance: Float,
@@ -701,7 +732,7 @@ private fun FilterCard(
 }
 
 @Composable
-private fun BloodGroupSelector(selected: String, onSelected: (String) -> Unit) {
+internal fun BloodGroupSelector(selected: String, onSelected: (String) -> Unit) {
     Column {
         Text("Blood Group", fontWeight = FontWeight.SemiBold)
         Spacer(Modifier.height(8.dp))
@@ -719,7 +750,7 @@ private fun BloodGroupSelector(selected: String, onSelected: (String) -> Unit) {
 }
 
 @Composable
-private fun DonorsMapView(donors: List<Donor>, distance: Float) {
+internal fun DonorsMapView(donors: List<Donor>, distance: Float) {
     val bangalore = LatLng(13.0003, 77.6482)
     val cameraPositionState = rememberCameraPositionState {
         position = CameraPosition.fromLatLngZoom(bangalore, 12f)
@@ -746,7 +777,7 @@ private fun DonorsMapView(donors: List<Donor>, distance: Float) {
 }
 
 @Composable
-private fun CardItem(content: @Composable ColumnScope.() -> Unit) {
+internal fun CardItem(content: @Composable ColumnScope.() -> Unit) {
     Card(
         modifier = Modifier.fillMaxWidth(),
         shape = RoundedCornerShape(8.dp),
@@ -758,7 +789,7 @@ private fun CardItem(content: @Composable ColumnScope.() -> Unit) {
 }
 
 @Composable
-private fun DetailCard(title: String, lines: List<String>) {
+internal fun DetailCard(title: String, lines: List<String>) {
     CardItem {
         Text(title, fontWeight = FontWeight.Bold)
         Spacer(Modifier.height(8.dp))
@@ -767,12 +798,12 @@ private fun DetailCard(title: String, lines: List<String>) {
 }
 
 @Composable
-private fun SectionTitle(text: String) {
+internal fun SectionTitle(text: String) {
     Text(text, fontSize = 20.sp, fontWeight = FontWeight.Bold)
 }
 
 @Composable
-private fun BloodGroupBadge(group: String, size: Int) {
+internal fun BloodGroupBadge(group: String, size: Int) {
     Box(
         Modifier.size(size.dp).clip(CircleShape).background(BloodRed),
         contentAlignment = Alignment.Center
@@ -782,7 +813,7 @@ private fun BloodGroupBadge(group: String, size: Int) {
 }
 
 @Composable
-private fun StatBlock(value: String, label: String) {
+internal fun StatBlock(value: String, label: String) {
     Column(horizontalAlignment = Alignment.CenterHorizontally) {
         Text(value, fontWeight = FontWeight.Bold, fontSize = 22.sp, color = BloodRed)
         Text(label, fontSize = 12.sp, textAlign = TextAlign.Center, color = Color.Gray)
@@ -790,7 +821,7 @@ private fun StatBlock(value: String, label: String) {
 }
 
 @Composable
-private fun InfoRow(label: String, value: String) {
+internal fun InfoRow(label: String, value: String) {
     Row(Modifier.fillMaxWidth().padding(vertical = 10.dp), horizontalArrangement = Arrangement.SpaceBetween) {
         Text(label, color = Color.Gray)
         Text(value, fontWeight = FontWeight.SemiBold, textAlign = TextAlign.End)
@@ -799,7 +830,7 @@ private fun InfoRow(label: String, value: String) {
 }
 
 @Composable
-private fun EmptyState(title: String, subtitle: String) {
+internal fun EmptyState(title: String, subtitle: String) {
     CardItem {
         Text(title, fontWeight = FontWeight.Bold, textAlign = TextAlign.Center, modifier = Modifier.fillMaxWidth())
         Spacer(Modifier.height(6.dp))
@@ -808,7 +839,7 @@ private fun EmptyState(title: String, subtitle: String) {
 }
 
 @Composable
-private fun BloodDropLogo(size: Int, color: Color) {
+internal fun BloodDropLogo(size: Int, color: Color) {
     Canvas(modifier = Modifier.size(size.dp)) {
         val w = this.size.width
         val h = this.size.height
@@ -829,8 +860,40 @@ private fun String.maskName(): String {
     return if (parts.size >= 2) "${parts.first()} ${parts[1].first()}." else this
 }
 
-private fun NavHostController.navigateToAuth() {
+internal fun NavHostController.navigateToAuth() {
     navigate(Routes.Auth) {
         popUpTo(Routes.Onboarding) { inclusive = true }
+    }
+}
+
+@Preview(showBackground = true)
+@Composable
+fun SplashPreview() {
+    RaktaSevaTheme {
+        Box(modifier = Modifier.fillMaxSize().background(BloodRed), contentAlignment = Alignment.Center) {
+            Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                BloodDropLogo(size = 112, color = Color.White)
+                Spacer(Modifier.height(24.dp))
+                Text("Rakta-Seva Connect", color = Color.White, fontSize = 28.sp, fontWeight = FontWeight.Bold)
+                Spacer(Modifier.height(8.dp))
+                Text("Saving Lives, One Drop at a Time.", color = Color.White.copy(alpha = 0.86f), fontSize = 15.sp)
+            }
+        }
+    }
+}
+
+@Preview(showBackground = true)
+@Composable
+fun OnboardingScreenPreview() {
+    RaktaSevaTheme {
+        OnboardingScreen(rememberNavController())
+    }
+}
+
+@Preview(showBackground = true, showSystemUi = true)
+@Composable
+fun HomePreview() {
+    RaktaSevaTheme {
+        HomeScreen(rememberNavController(), viewModel())
     }
 }
